@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maalam Riyadh Map</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/pmtiles@3.2.1/dist/pmtiles.js"></script>
+<style>
+  /* Maalam (ADR 0002): one light look, the map's own palette. */
+  :root { --signal: #2443A8; --paper: #F3F4F1; --graphite: #1E2522; --mist: #D6DCE8; --muted: #59625E; color-scheme: light; }
+  html, body { height: 100%; margin: 0; background: var(--paper); color: var(--graphite);
+               font-family: "IBM Plex Sans Arabic", "Geeza Pro", "Segoe UI", Tahoma, system-ui, sans-serif; }
+  #map { position: absolute; inset: 0; }
+  .bar { position: absolute; z-index: 3; top: 12px; inset-inline-start: 12px; display: flex; gap: 8px; align-items: center;
+         background: #fff; border-radius: 12px; padding: 6px 8px 6px 12px; box-shadow: 0 1px 3px rgba(30,37,34,.18); }
+  .bar b { color: var(--signal); font-size: 18px; }
+  .bar button { font: 600 13px inherit; font-family: inherit; border: 1px solid var(--mist); background: #fff; color: var(--graphite); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+  .bar button[aria-pressed="true"] { background: var(--signal); color: #fff; border-color: var(--signal); }
+  .info { position: absolute; z-index: 3; bottom: 28px; inset-inline-start: 12px; width: min(360px, calc(100vw - 24px)); direction: ltr;
+          background: #fff; border-radius: 12px; box-shadow: 0 1px 3px rgba(30,37,34,.18); font-size: 13.5px; line-height: 1.55; padding: 10px 14px; }
+  .info b { display: block; margin-bottom: 4px; }
+  .info p { margin: 0 0 6px; }
+  .info .k { color: var(--muted); font-size: 12px; margin: 0; }
+  .load[hidden] { display: none; }
+  .load { position: absolute; z-index: 4; inset: 0; display: grid; place-items: center; background: var(--paper); color: var(--muted); font-size: 15px; }
+  .credit { position: absolute; z-index: 2; bottom: 6px; inset-inline-end: 8px; font-size: 10.5px; color: var(--muted); background: rgba(243,244,241,.85); padding: 1px 6px; border-radius: 4px; direction: ltr; }
+  .credit a { color: inherit; text-decoration: none; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div class="load" id="load">جارٍ تحميل خريطة الرياض… Loading the Riyadh map…</div>
+<div class="bar"><b>مَعلَم</b>
+  <button type="button" data-l="ar" aria-pressed="true">عربي</button>
+  <button type="button" data-l="en" aria-pressed="false">English</button>
+</div>
+<div class="info"><b>Riyadh maps MVP (Maalam)</b>
+  <p>Our own map: tiles from OpenStreetMap, our map style and our Arabic label font. Zoom in for streets, buildings and places; switch Arabic and English.</p>
+  <p><b style="display:inline">Riyadh is the demo area only;</b> the platform is meant for the whole of Saudi Arabia.</p>
+  <p class="k">Search, autocomplete, reverse geocoding and routing run on our servers and are not in this demo.</p></div>
+<div class="credit"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a></div>
+<script type="module">
+import { maalamStyle } from "./style.js";
+const here = (p) => new URL(p, location.href).href;
+const protocol = new pmtiles.Protocol();
+maplibregl.addProtocol("pmtiles", protocol.tile);
+maplibregl.setRTLTextPlugin(here("rtl.js"), true);
+const opts = { tiles: "pmtiles://" + here("tiles/riyadh.pmtiles"), glyphs: here("glyphs/") + "{fontstack}/{range}.pbf" };
+const map = new maplibregl.Map({ container: "map", style: maalamStyle({ ...opts, lang: "ar" }), center: [46.6825, 24.7], zoom: 12.6,
+  maxBounds: [[46.2, 24.2], [47.2, 25.2]], attributionControl: false, hash: true });
+map.addControl(new maplibregl.NavigationControl(), "bottom-right");
+map.once("load", () => { document.getElementById("load").hidden = true; });
+document.querySelectorAll(".bar button").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".bar button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  map.setStyle(maalamStyle({ ...opts, lang: b.dataset.l }));
+}));
+</script>
+</body>
+</html>
